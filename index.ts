@@ -1,11 +1,12 @@
 import express, { Express,Request,Response } from "express";
 import mongoose from "mongoose";
-const routeSign =  require('./routes/sign')
+const auth =  require('./routes/auth')
 require('dotenv').config()
 
 const app = express()
 
-app.use('/sign',routeSign)
+
+app.use('/auth',auth)
 
 
 mongoose.connect(`mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS_DB}@login.ulxmouh.mongodb.net/`).then(()=>{

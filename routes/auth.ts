@@ -1,6 +1,9 @@
 import express, { Express,Response,Request, NextFunction, json } from "express";
-const Condominium = require('../models/Condominium')
+const jwt = require('jsonwebtoken')
 const bcrypt = require("bcrypt")
+require('dotenv').config()
+const Condominium = require('../models/Condominium')
+
 
 interface Condominium {
     name: string;
@@ -11,12 +14,11 @@ interface Condominium {
 }
 
 
+const auth =  express()
+auth.use(json())
 
-const route =  express()
-route.use(json())
 
-
-route.post('/',dateRegister,async(req,res)=>{
+auth.post('/register',dateRegister,async(req,res)=>{
     const {
         name,email,password,address,phone
     } = req.body
@@ -42,13 +44,61 @@ route.post('/',dateRegister,async(req,res)=>{
         })
     })
 
-   
   
+})
+
+
+auth.get('/login',async(req,res)=>{
+    
+    const {email, password} = req.body;
+
+    if(!email||!password){
+        console.log("Email ou senha não foi enviado");
+        res.status(401).json({
+            "msg":"Você precisa enviar: Email e Senha"
+        })
+        return
+    }
+
+    try {
+        const userLogin = await Condominium.findOne({email:email});
+        if(!userLogin){
+            res.status(404).json({
+                'msg':'Usuário não encontrado'
+            })
+            return
+        }
+        
+        const SECRET =  process.env.SECRET_APP
+        
+        const token = jwt.sign({id:userLogin.id},SECRET,{expiresIn:18000}) //60ms*60 * 5m
+        const refreshToken = jwt.sign({id:userLogin.id},SECRET,{expiresIn:54.000})//60ms*60 * 15m
+        res.status(200).json({
+            'msg':'Usuário logado com sucesso',
+            'token':{
+                'acess':`${token}`,
+                'refresh':`${refreshToken}`
+            }
+        })
+
+
+    } catch (error) {
+        console.log(error)
+        res.status(401).json({
+            'msg':'Erro ao tentar localizar usuário'
+        })
+    }
+
+
+
+
+
 })
 
 
 
 
+//middleware
 async function dateRegister(req:Request,res:Response,next:NextFunction){
 
     const {
@@ -88,4 +138,7 @@ async function dateRegister(req:Request,res:Response,next:NextFunction){
 
 }
 
-module.exports = route
+
+
+
+module.exports = auth
