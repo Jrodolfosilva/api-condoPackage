@@ -31,6 +31,4 @@ size: Number
 const Condominium = model('Condominium',SchemaCondominium)
 
 
-
-
 module.exports = Condominium

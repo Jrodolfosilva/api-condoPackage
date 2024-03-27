@@ -18,7 +18,7 @@ const auth =  express()
 auth.use(json())
 
 
-auth.post('/register',dateRegister,async(req,res)=>{
+auth.post('/register',verifyDateRegister,async(req,res)=>{
     const {
         name,email,password,address,phone
     } = req.body
@@ -96,10 +96,20 @@ auth.get('/login',async(req,res)=>{
 })
 
 
+auth.patch('/update',verifyToken, async(req,res)=>{
+    
+    const userId = req.body.id
+
+   
+
+})
+
+
+
 
 
 //middleware
-async function dateRegister(req:Request,res:Response,next:NextFunction){
+async function verifyDateRegister(req:Request,res:Response,next:NextFunction){
 
     const {
         name,email,password,confirmPassword,address,phone
@@ -138,7 +148,39 @@ async function dateRegister(req:Request,res:Response,next:NextFunction){
 
 }
 
+async function verifyToken(req:Request,res:Response,next:NextFunction){
+    const bearestoken =  req.headers.authorization
+    const token = bearestoken?.split(" ")[1]
 
+    if(!token){
+        console.log("Você precisa enviar o TOKEN no headers da requisição")
 
+        res.status(401).json({
+            'msg':'Você precisa enviar o TOKEN no headers da requisição'
+        })
+
+        return
+    }
+
+    try {
+        const tokenId = await jwt.verify(token,process.env.SECRET_APP)
+    
+        if(tokenId){
+            req.body.id=tokenId.id
+            console.log('TOKEN verificado e inserido no req.body')
+            next()
+        }
+       
+    } catch (error) {
+        console.log(error)
+
+        res.status(401).json({
+            'msg':'Não foi possivel verificar o seu token'
+        })
+
+        return
+    }
+   
+}
 
 module.exports = auth
