@@ -98,7 +98,67 @@ auth.get('/login',async(req,res)=>{
 
 auth.patch('/update',verifyToken, async(req,res)=>{
     
-    const userId = req.body.id
+   const userId = req.body.id
+
+   try {
+        const user =  await Condominium.findOne({_id:userId})
+
+        if(!user){
+            console.log('Usuário não foi encontrado')
+
+            res.status(404).json({
+                'msg':'O usuário não foi encontrado'
+            })
+
+            return
+        }
+
+        const {
+            name,email,oldPassword,password,confirmPassword,address,phone
+        } = req.body
+        const setUpdatePassword = oldPassword || password || confirmPassword
+       
+        const oldPasswordHash = await bcrypt.compare(oldPassword,user.password)
+
+        if(setUpdatePassword && !oldPasswordHash || password !== confirmPassword){
+            console.log('Veio dados para alteração de senha mas oldpassword não confere com user.password ou password != confirmPassword')
+
+            res.status(401).json({
+                'msg':'Para atualizar a senha você precisar enviar a senha atual, nova senha e confirmar a nova senha',
+                'resul':`hash banco:${user.password}, ${user.id} e ${user.name}  ----  hash old:${oldPasswordHash}`
+            })
+            return
+        }
+                   
+        const newPasswordHash = await bcrypt.hash(password,10)
+
+        const setUpdate = await Condominium.findByIdAndUpdate(
+                userId,
+                {
+                    name:name?name:user.name,
+                    email:email?email:user.email,
+                    password:newPasswordHash?newPasswordHash:user.password,
+                    phone: phone?phone:user.phone,
+                    address: address?address:user.address               
+                }
+            )
+
+        if(setUpdate){
+            console.log(`As informações do usuário foram atualizadas com sucesso: ${setUpdate}`);
+
+            res.status(200).json({
+                'msg':'Usuário atualizado com sucesso',
+                    
+                })
+            }
+
+
+        
+   } catch (error) {
+    // Pegar error
+
+    console.log(error)
+   }
 
    
 
