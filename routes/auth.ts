@@ -19,7 +19,7 @@ const auth =  express()
 auth.use(json())
 
 
-auth.post('/register',verifyDateRegister,async(req,res)=>{
+auth.post('/register',verifyDataRegister,async(req,res)=>{
     const {
         name,email,password,address,phone
     } = req.body
@@ -69,19 +69,27 @@ auth.get('/login',async(req,res)=>{
             })
             return
         }
-        
-        const SECRET =  process.env.SECRET_APP
-        
-        const token = jwt.sign({id:userLogin.id},SECRET,{expiresIn:18000}) //60ms*60 * 5m
-        const refreshToken = jwt.sign({id:userLogin.id},SECRET,{expiresIn:54.000})//60ms*60 * 15m
-        res.status(200).json({
-            'msg':'Usuário logado com sucesso',
-            'token':{
-                'acess':`${token}`,
-                'refresh':`${refreshToken}`
-            }
-        })
+        const isPassword = await  bcrypt.compare(password,userLogin.password)
 
+        if(isPassword){
+            const SECRET =  process.env.SECRET_APP
+        
+            const token = jwt.sign({id:userLogin.id},SECRET,{expiresIn:18000}) //60ms*60 * 5m
+            const refreshToken = jwt.sign({id:userLogin.id},SECRET,{expiresIn:54.000})//60ms*60 * 15m
+            res.status(200).json({
+                'msg':'Usuário logado com sucesso',
+                'token':{
+                    'acess':`${token}`,
+                    'refresh':`${refreshToken}`
+                }
+            })
+    
+        }else{
+            res.status(401).json({
+                'msg':'Sua senha não confere'
+            })
+        }
+       
 
     } catch (error) {
         console.log(error)
@@ -97,65 +105,42 @@ auth.get('/login',async(req,res)=>{
 })
 
 
-auth.patch('/update',verifyToken, async(req,res)=>{
-   
-   const userId = req.body.id
+auth.patch('/update',verifyToken,verifyDataUpdatePassword, async(req,res)=>{
+   const {name,newPasswordUpdate,phone,email,address,id} = req.body
+  
+
+   //Posso evitar essa req ao db, passando os dados via req.body da requisição do meyu middleware verifydataupdatePassword
 
    try {
-        const user =  await Condominium.findOne({_id:userId})
+        const user = await Condominium.findOne({_id:id})
 
-        if(!user){
-            console.log('Usuário não foi encontrado')
-
-            res.status(404).json({
-                'msg':'O usuário não foi encontrado'
+            const userUpdate =  await Condominium.findByIdAndUpdate(id,{
+                name: name?name:user.name,
+                email: email?email:user.email,
+                phone:phone?phone:user.phone,
+                password:newPasswordUpdate?newPasswordUpdate:user.password,
+                address:address?address:user.address
+    
             })
 
-            return
-        }
-        
-        const {
-            name,email,oldPassword,password,confirmPassword,address,phone
-        } = req.body
-        const setUpdatePassword = oldPassword || password || confirmPassword
-       
-        const oldPasswordCompare = oldPassword&&await bcrypt.compare(oldPassword,user.password) || false     
-        const newPassword =  password&&confirmPassword
-        if(setUpdatePassword && !oldPasswordCompare ||!newPassword|| password !== confirmPassword){
-            console.log('Veio dados para alteração de senha mas oldpassword não confere com user.password ou password != confirmPassword')
-
-            res.status(401).json({
-                'msg':'Para atualizar a senha você precisar enviar a senha atual, nova senha e confirmar a nova senha',
-            })
-            return
-        }
-           
-        const newPasswordHash = await bcrypt.hash(password,10)
-
-        const setUpdate = await Condominium.findByIdAndUpdate(
-                userId,
-                {
-                    name:name?name:user.name,
-                    email:email?email:user.email,
-                    password:newPasswordHash?newPasswordHash:user.password,
-                    phone: phone?phone:user.phone,
-                    address: address?address:user.address               
-                }
-            )
-
-        if(setUpdate){
-            console.log(`As informações do usuário foram atualizadas com sucesso: ${setUpdate}`);
-
-            res.status(200).json({
-                'msg':'Usuário atualizado com sucesso',
-                    
+            if(userUpdate){
+                res.status(200).json({
+                    'msg':'Seus dados foram atualizados'
                 })
+                return
+
             }
+            
 
-
-        
+       
+       
    } catch (error) {
     // Pegar error
+
+    res.status(404).json({
+        'msg':`Não foi possivel atualizar o Usuário: ID:${id}`
+    })
+
 
     console.log(error)
    }
@@ -169,7 +154,7 @@ auth.patch('/update',verifyToken, async(req,res)=>{
 
 
 //middleware
-async function verifyDateRegister(req:Request,res:Response,next:NextFunction){
+async function verifyDataRegister(req:Request,res:Response,next:NextFunction){
 
     const {
         name,email,password,confirmPassword,address,phone
@@ -207,7 +192,88 @@ async function verifyDateRegister(req:Request,res:Response,next:NextFunction){
     
 
 }
+async function verifyDataUpdatePassword(req:Request,res:Response,next:NextFunction){
+    const dataReqBody = Object.keys(req.body)
+    if(dataReqBody.length == 1){
+        res.status(401).json({
+         'msg':'Você precisar enviar dados para atualização'
+        })
 
+        return
+
+    }
+    const {oldPassword, password, confirmPassword,id} = req.body
+
+    if(oldPassword || password || confirmPassword){
+        
+        if(!oldPassword){
+            res.status(401).json({
+                'msg':'Você precisa enviar sua SENHA ATUAL para criar uma nova'
+            })
+            return
+        }
+        if(!password || !confirmPassword){
+            res.status(401).json({
+                'msg':'Você precisa enviar sua SENHA NOVA e a CONFIRMAÇÃO'
+            })
+            return
+        }
+
+        if(password !== confirmPassword){
+            res.status(401).json({
+                'msg':'A NOVA SENHA e a CONFIRMAÇÃO não são iguais'
+            })
+            return
+        }
+
+        try {
+            const user = await Condominium.findOne({_id:id});
+
+            console.log(user)
+           const verifyPasswordUser = await bcrypt.compare(oldPassword, user.password)
+
+            if(verifyPasswordUser){
+
+                const hashNewPassword =  await bcrypt.hash(password,10)
+                req.body.newPasswordUpdate = hashNewPassword;
+                console.log(`senha nova : ${hashNewPassword}`)
+
+                next()
+
+                return
+            }
+            else{
+                req.body.newPasswordUpdate = false
+
+                res.status(401).json({
+                    'msg':'Senha atual invalida'
+                })
+
+                return
+
+            }
+
+
+            
+        } catch (error) {
+            console.log(error)
+
+            res.status(401).json({
+                'msg':'Não foi possivel validar sua identidade, tente novamente ou procure o suporte'
+            })
+        }
+      
+    }
+    if(!oldPassword&&!password&&!confirmPassword){
+        next()
+    }
+
+       
+
+    
+       
+
+}
 
 
 module.exports = auth
