@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken')
 const bcrypt = require("bcrypt")
 require('dotenv').config()
 const Condominium = require('../models/Condominium')
+const verifyToken = require('../middleware/verifyToken')
 
 
 interface Condominium {
@@ -97,7 +98,7 @@ auth.get('/login',async(req,res)=>{
 
 
 auth.patch('/update',verifyToken, async(req,res)=>{
-    
+   
    const userId = req.body.id
 
    try {
@@ -112,24 +113,23 @@ auth.patch('/update',verifyToken, async(req,res)=>{
 
             return
         }
-
+        
         const {
             name,email,oldPassword,password,confirmPassword,address,phone
         } = req.body
         const setUpdatePassword = oldPassword || password || confirmPassword
        
-        const oldPasswordHash = await bcrypt.compare(oldPassword,user.password)
-
-        if(setUpdatePassword && !oldPasswordHash || password !== confirmPassword){
+        const oldPasswordCompare = oldPassword&&await bcrypt.compare(oldPassword,user.password) || false     
+        const newPassword =  password&&confirmPassword
+        if(setUpdatePassword && !oldPasswordCompare ||!newPassword|| password !== confirmPassword){
             console.log('Veio dados para alteração de senha mas oldpassword não confere com user.password ou password != confirmPassword')
 
             res.status(401).json({
                 'msg':'Para atualizar a senha você precisar enviar a senha atual, nova senha e confirmar a nova senha',
-                'resul':`hash banco:${user.password}, ${user.id} e ${user.name}  ----  hash old:${oldPasswordHash}`
             })
             return
         }
-                   
+           
         const newPasswordHash = await bcrypt.hash(password,10)
 
         const setUpdate = await Condominium.findByIdAndUpdate(
@@ -208,39 +208,6 @@ async function verifyDateRegister(req:Request,res:Response,next:NextFunction){
 
 }
 
-async function verifyToken(req:Request,res:Response,next:NextFunction){
-    const bearestoken =  req.headers.authorization
-    const token = bearestoken?.split(" ")[1]
 
-    if(!token){
-        console.log("Você precisa enviar o TOKEN no headers da requisição")
-
-        res.status(401).json({
-            'msg':'Você precisa enviar o TOKEN no headers da requisição'
-        })
-
-        return
-    }
-
-    try {
-        const tokenId = await jwt.verify(token,process.env.SECRET_APP)
-    
-        if(tokenId){
-            req.body.id=tokenId.id
-            console.log('TOKEN verificado e inserido no req.body')
-            next()
-        }
-       
-    } catch (error) {
-        console.log(error)
-
-        res.status(401).json({
-            'msg':'Não foi possivel verificar o seu token'
-        })
-
-        return
-    }
-   
-}
 
 module.exports = auth
