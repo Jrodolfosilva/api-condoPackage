@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt")
 require('dotenv').config()
 const Condominium = require('../models/Condominium')
 const verifyToken = require('../middleware/verifyToken')
+const verifyReqBodyData = require('../middleware/verifyReqBodyData')
 
 
 interface Condominium {
@@ -19,7 +20,7 @@ const auth =  express()
 auth.use(json())
 
 
-auth.post('/register',verifyDataRegister,async(req,res)=>{
+auth.post('/register',verifyReqBodyData,verifyDataRegister,async(req,res)=>{
     const {
         name,email,password,address,phone
     } = req.body
@@ -105,7 +106,7 @@ auth.get('/login',async(req,res)=>{
 })
 
 
-auth.patch('/update',verifyToken,verifyDataUpdatePassword, async(req,res)=>{
+auth.patch('/update',verifyToken,verifyReqBodyData,verifyDataUpdatePassword, async(req,res)=>{
    const {name,newPasswordUpdate,phone,email,address,id} = req.body
   
 
@@ -193,15 +194,7 @@ async function verifyDataRegister(req:Request,res:Response,next:NextFunction){
 
 }
 async function verifyDataUpdatePassword(req:Request,res:Response,next:NextFunction){
-    const dataReqBody = Object.keys(req.body)
-    if(dataReqBody.length == 1){
-        res.status(401).json({
-         'msg':'Você precisar enviar dados para atualização'
-        })
-
-        return
-
-    }
+   
     const {oldPassword, password, confirmPassword,id} = req.body
 
     if(oldPassword || password || confirmPassword){

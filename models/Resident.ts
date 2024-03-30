@@ -25,6 +25,7 @@ const SchemaResident =  new Schema({
     }
 })
 
+
  const Resident = model('Resident',SchemaResident)
 
 module.exports = Resident
