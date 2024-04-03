@@ -2,7 +2,7 @@ import express, { Express,Request,Response } from "express";
 import mongoose from "mongoose";
 const auth =  require('./routes/auth')
 const resident =  require('./routes/resident')
-
+const pack = require('./routes/pakage')
 require('dotenv').config()
 
 const app = express()
@@ -10,6 +10,7 @@ const app = express()
 
 app.use('/auth',auth)
 app.use('/resident',resident)
+app.use('/package',pack)
 
 
 

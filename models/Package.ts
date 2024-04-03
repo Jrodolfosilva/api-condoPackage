@@ -7,6 +7,11 @@ id_resident:{
     ref:"Resident",
     required:true
 },
+id_condominium:{
+    type:mongoose.Types.ObjectId,
+    ref:"Condominium",
+    required:true
+},
 name:{
     type:String,
     required: true
@@ -30,6 +35,6 @@ code:{
 })
 
 
-const Package = model('Package',SchemaPackage)
+const Pack = model('Package',SchemaPackage)
 
-module.exports = Package
+module.exports = Pack

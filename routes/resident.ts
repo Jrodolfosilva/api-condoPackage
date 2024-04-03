@@ -43,7 +43,8 @@ resident.get('/',verifyToken,async(req,res)=>{
 
 resident.get('/:id',verifyToken,async(req,res)=>{
     const idResident =  req.params.id
-    
+    let idCondominium = req.body.id
+    console.log(typeof(idCondominium))
     if(!idResident){
         res.status(401).json({
             'msg':'Você precisa passar o parametro url /:id'
@@ -53,7 +54,7 @@ resident.get('/:id',verifyToken,async(req,res)=>{
 
     try {
 
-        const morador = JSON.stringify(await Resident.findOne({_id:idResident}))
+        const morador = JSON.stringify(await Resident.findOne({_id:idResident,id_condominium:idCondominium}))
       
         console.log(morador)
 
@@ -86,7 +87,7 @@ resident.post('/register',verifyToken,verifyReqBodyData,async(req,res)=>{
     }
 
     try {
-        const user =  await Resident.findOne({email:email})
+        const user =  await Resident.findOne({email:email,id_condominium:id})
 
         if(user){
             res.status(401).json({
@@ -129,6 +130,7 @@ resident.post('/register',verifyToken,verifyReqBodyData,async(req,res)=>{
 
 resident.patch('/update/:id',verifyToken,verifyReqBodyData,async(req,res)=>{
    const idUser =  req.params.id
+   const idCondominium = req.body.id
 
    if(!idUser){
     res.status(401).json({
@@ -140,7 +142,7 @@ resident.patch('/update/:id',verifyToken,verifyReqBodyData,async(req,res)=>{
   
    try {
 
-    const user = await Resident.findOne({_id:idUser})
+    const user = await Resident.findOne({_id:idUser,id_condominium:idCondominium})
 
     if(!user){
         res.status(401).json({
