@@ -21,6 +21,7 @@ auth.use(json())
 
 
 auth.post('/register',verifyReqBodyData,verifyDataRegister,async(req,res)=>{
+
     const {
         name,email,password,address,phone
     } = req.body
@@ -50,7 +51,7 @@ auth.post('/register',verifyReqBodyData,verifyDataRegister,async(req,res)=>{
 })
 
 
-auth.get('/login',async(req,res)=>{
+auth.post('/login',async(req,res)=>{
     
     const {email, password} = req.body;
 
@@ -71,31 +72,29 @@ auth.get('/login',async(req,res)=>{
             return
         }
         const isPassword = await  bcrypt.compare(password,userLogin.password)
-
-        if(isPassword){
-            const SECRET =  process.env.SECRET_APP
-        
-            const token = jwt.sign({id:userLogin.id},SECRET,{expiresIn:18000}) //60ms*60 * 5m
-            const refreshToken = jwt.sign({id:userLogin.id},SECRET,{expiresIn:54.000})//60ms*60 * 15m
-            res.status(200).json({
-                'msg':'Usuário logado com sucesso',
-                'token':{
-                    'acess':`${token}`,
-                    'refresh':`${refreshToken}`
-                }
-            })
-    
-        }else{
-            res.status(401).json({
+        if(!isPassword){
+            res.status(404).json({
                 'msg':'Sua senha não confere'
             })
+            return
         }
-       
+        
+        const SECRET =  process.env.SECRET_APP
+        
+        const token = jwt.sign({id:userLogin.id},SECRET,{expiresIn:18000}) //60ms*60 * 5m
+        const refreshToken = jwt.sign({id:userLogin.id},SECRET,{expiresIn:54.000})//60ms*60 * 15m
+        res.status(200).json({
+            'msg':'Usuário logado com sucesso',
+            'token':{
+                'acess':`${token}`,
+                'refresh':`${refreshToken}`
+                }
+            })
 
     } catch (error) {
         console.log(error)
         res.status(401).json({
-            'msg':'Erro ao tentar localizar usuário'
+            'msg':'Erro ao tentar fazer login'
         })
     }
 
@@ -116,6 +115,7 @@ auth.patch('/update',verifyToken,verifyReqBodyData,verifyDataUpdatePassword, asy
         const user = await Condominium.findOne({_id:id})
 
             const userUpdate =  await Condominium.findByIdAndUpdate(id,{
+                //posso usar um set
                 name: name?name:user.name,
                 email: email?email:user.email,
                 phone:phone?phone:user.phone,

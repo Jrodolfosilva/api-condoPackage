@@ -15,7 +15,7 @@ app.use('/package',pack)
 
 
 mongoose.connect(`mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS_DB}@login.ulxmouh.mongodb.net/`).then(()=>{
-    app.listen(3000,()=>{
-        console.log("Server on Fire👌: http://localhost:3000")
+    app.listen(5000,()=>{
+        console.log("Server on Fire👌: http://localhost:5000")
     })
 }).catch((error)=>console.log(error))

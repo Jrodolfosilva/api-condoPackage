@@ -10,9 +10,11 @@ function verifyReqBodyData (req:Request,res:Response,next:NextFunction){
         return
 
     }
-    else{
-        next()
-    }
+
+  
+
+
+   
 }
 
 module.exports = verifyReqBodyData

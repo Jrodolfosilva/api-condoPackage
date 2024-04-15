@@ -108,6 +108,8 @@ pack.patch('/update/:idPackage',verifyToken,async(req,res)=>{
         }
 
         await Pack.findByIdAndUpdate(idPackage,{
+
+            //usar o set
             name:name?name:packageA.name,
             type:type?type:packageA.type,
             checkout:checkout?checkout:packageA.checkout,
