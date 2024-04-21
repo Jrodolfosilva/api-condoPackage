@@ -3,11 +3,12 @@ import mongoose from "mongoose";
 const auth =  require('./routes/auth')
 const resident =  require('./routes/resident')
 const pack = require('./routes/pakage')
+var cors = require('cors')
 require('dotenv').config()
 
 const app = express()
 
-
+app.use(cors())
 app.use('/auth',auth)
 app.use('/resident',resident)
 app.use('/package',pack)

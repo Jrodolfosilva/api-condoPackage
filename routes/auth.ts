@@ -13,6 +13,7 @@ interface Condominium {
     email: string;
     password: string;
     address: string;
+    id:string
 }
 
 
@@ -64,7 +65,7 @@ auth.post('/login',async(req,res)=>{
     }
 
     try {
-        const userLogin = await Condominium.findOne({email:email});
+        const userLogin:Condominium = await Condominium.findOne({email:email});
         if(!userLogin){
             res.status(404).json({
                 'msg':'Usuário não encontrado'
@@ -85,6 +86,12 @@ auth.post('/login',async(req,res)=>{
         const refreshToken = jwt.sign({id:userLogin.id},SECRET,{expiresIn:54.000})//60ms*60 * 15m
         res.status(200).json({
             'msg':'Usuário logado com sucesso',
+            'user':{
+                'name':userLogin.name,
+                'email':userLogin.email,
+                'address':userLogin.address,
+                'phone':userLogin.phone
+            },
             'token':{
                 'acess':`${token}`,
                 'refresh':`${refreshToken}`
@@ -151,7 +158,35 @@ auth.patch('/update',verifyToken,verifyReqBodyData,verifyDataUpdatePassword, asy
 })
 
 
+auth.post('/token',verifyToken,(req,res)=>{
+    res.status(200).json({
+        'msg':'Token ativo'
+    })
+})
 
+
+auth.post('/refresh',verifyToken,(req,res)=>{
+    const idUser = req.body.id
+    const SECRET =  process.env.SECRET_APP
+
+    try {
+        const token = jwt.sign({id:idUser},SECRET,{expiresIn:18000}) //60ms*60 * 5m
+        const refreshToken = jwt.sign({id:idUser},SECRET,{expiresIn:54.000})//60ms*60 * 15m
+        
+        res.status(200).json({
+            'token':token,
+            'refresh': refreshToken
+        })
+      
+    
+    } catch (error) {
+        res.status(404).json({
+            'msg':'Não foi possivel criar novos de acesso tokens, entre em contato com o suporte'
+        })
+    }
+   
+
+})
 
 
 //middleware
